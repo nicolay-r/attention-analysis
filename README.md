@@ -53,7 +53,7 @@ analyzing the data.
 
 Attention extraction is run with
 ```
-python extract_attention.py --preprocessed_data_file <path-to-your-data> --bert_dir <directory-containing-BERT-model>
+python extract_attention.py --preprocessed-data-file <path-to-your-data> --bert-dir <directory-containing-BERT-model>
 ```
 The following optional arguments can also be added:
 * `--max_sequence_length`: Maximum input sequence length after tokenization (default is 128).
