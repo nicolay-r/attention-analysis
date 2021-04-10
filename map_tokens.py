@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
+
 class WordFromTokens:
 
     def __init__(self, token, pos):
-        assert(isinstance(token, unicode))
+        assert(isinstance(token, str))
         assert(isinstance(pos, int))
         self.__tokens = [token]
         self.__positions = [pos]
@@ -40,7 +41,7 @@ class ContextWordWindow:
         return len(self.__wft_list)
 
     def add_token(self, token, pos):
-        assert(isinstance(token, unicode))
+        assert(isinstance(token, str))
         assert(isinstance(pos, int))
 
         # When list is empty.
@@ -60,7 +61,6 @@ class ContextWordWindow:
         self.__wft_list.append(new_token)
 
     def try_get_indices_if_matched(self, phrase, retrieve=True):
-        assert(isinstance(phrase, unicode))
         words = phrase.split(' ')
 
         # words won't enough
@@ -92,6 +92,9 @@ class ContextWordWindow:
 
 def process_tokens(tokens, vocabs, handle):
     assert(isinstance(vocabs, dict))
+
+    cww = ContextWordWindow()
+
     # NOTE: in vocabs everything should be ordered by decreasing length.
 
     for position, token in enumerate(tokens):
@@ -99,7 +102,7 @@ def process_tokens(tokens, vocabs, handle):
 
     while cww.list_len() > 0:
         is_matched = False
-        for vocab_name, vocab in vocabs.iteritems():
+        for vocab_name, vocab in vocabs.items():
             for vocab_word in vocab:
                 positions = cww.try_get_indices_if_matched(phrase=vocab_word)
 
@@ -117,25 +120,22 @@ def process_tokens(tokens, vocabs, handle):
             cww.del_last()
 
 
-def handle(token_positions, vocab_word, vocab_name):
-    print u"{pos} found by vw {vw} - ['{vn}']".format(pos=token_positions, vw=vocab_word, vn=vocab_name)
-
-
 def order_vocab(vocab):
     return list(reversed(sorted(vocab, key=lambda x: len(x.split(' ')))))
 
 
-#########################################
-# TEST
-#########################################
-match_list1 = [u"мама", u'чтобы']
-match_list2 = [u"s"]
-tokens = [u"ма", u"##ма", u"не", u"за", u"что", u"##бы", u"все", u'#', u's', u'#']
-vocabs = [match_list1]
-ordered_vocabs = {
-    u'test': order_vocab(match_list1),
-    u'subj': order_vocab(match_list2)
-}
-# Register completed words in vocabulary.
-cww = ContextWordWindow()
-process_tokens(tokens=tokens, vocabs=ordered_vocabs, handle=handle)
+def iter_from_file(filepath):
+    with open(filepath, 'r') as f:
+        for line in f.readlines():
+            l = line.strip()
+            yield l
+
+
+def read_lexicon(filepath):
+    l = []
+    for line in iter_from_file(filepath):
+        w = line.split(u',')[0]
+        l.append(w)
+    return l
+
+
