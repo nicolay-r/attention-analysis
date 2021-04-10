@@ -22,14 +22,16 @@ class WordFromTokens:
 
     @staticmethod
     def is_inner(token):
+        if len(token) < 2:
+            return False
+
         return token[0] == token[1] == "#"
 
 
 class ContextWordWindow:
 
-    def __init__(self, max_seq_len=5):
+    def __init__(self):
         self.__wft_list = []
-        self.__max_seq_len = max_seq_len
 
     def __clear_seq(self):
         self.__wft_list = []
@@ -53,13 +55,8 @@ class ContextWordWindow:
             wft_last.append(token)
             return
 
-        # buffer is full -- releasing the first element from it.
-        if len(self.__wft_list) == self.__max_seq_len:
-            self.__wft_list = self.__wft_list[1:]
-
         # appending a new token.
         new_token = WordFromTokens(token=token, pos=pos)
-        print new_token.get_word()
         self.__wft_list.append(new_token)
 
     def try_get_indices_if_matched(self, phrase, retrieve=True):
@@ -94,6 +91,7 @@ class ContextWordWindow:
 
 
 def process_tokens(tokens, vocabs, handle):
+    assert(isinstance(vocabs, dict))
     # NOTE: in vocabs everything should be ordered by decreasing length.
 
     for position, token in enumerate(tokens):
@@ -101,15 +99,14 @@ def process_tokens(tokens, vocabs, handle):
 
     while cww.list_len() > 0:
         is_matched = False
-        for index, vocab in enumerate(vocabs):
+        for vocab_name, vocab in vocabs.iteritems():
             for vocab_word in vocab:
-                print vocab_word.encode('utf-8')
                 positions = cww.try_get_indices_if_matched(phrase=vocab_word)
 
                 if positions is None:
                     continue
 
-                handle(positions, vocab_word, index)
+                handle(positions, vocab_word, vocab_name)
                 is_matched = True
                 break
             if is_matched:
@@ -120,17 +117,25 @@ def process_tokens(tokens, vocabs, handle):
             cww.del_last()
 
 
+def handle(token_positions, vocab_word, vocab_name):
+    print u"{pos} found by vw {vw} - ['{vn}']".format(pos=token_positions, vw=vocab_word, vn=vocab_name)
+
+
+def order_vocab(vocab):
+    return list(reversed(sorted(vocab, key=lambda x: len(x.split(' ')))))
+
+
 #########################################
 # TEST
 #########################################
-
-match_list = [u"мама", u'чтобы']
-tokens = [u"ма", u"##ма", u"не", u"за", u"что", u"##бы"]
-
-def handle(token_positions, vocab_word, vocab_index):
-    print u"{pos} found by vw {vw} - [{vi}]".format(pos=token_positions, vw=vocab_word, vi=vocab_index)
-
+match_list1 = [u"мама", u'чтобы']
+match_list2 = [u"s"]
+tokens = [u"ма", u"##ма", u"не", u"за", u"что", u"##бы", u"все", u'#', u's', u'#']
+vocabs = [match_list1]
+ordered_vocabs = {
+    u'test': order_vocab(match_list1),
+    u'subj': order_vocab(match_list2)
+}
 # Register completed words in vocabulary.
-cww = ContextWordWindow(120)
-process_tokens(tokens=tokens, vocabs=[match_list],
-               handle=lambda pos, vw, vi: handle(pos, vw, vi))
+cww = ContextWordWindow()
+process_tokens(tokens=tokens, vocabs=ordered_vocabs, handle=handle)
