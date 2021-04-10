@@ -13,7 +13,7 @@ class WordFromTokens:
         return self.__positions
 
     def get_word(self):
-        return "".join([t[2:] if WordFromTokens.is_inner(t) else t for t in tokens])
+        return "".join([t[2:] if WordFromTokens.is_inner(t) else t for t in self.__tokens])
 
     def append(self, token):
         assert(WordFromTokens.is_inner(token))
@@ -58,7 +58,9 @@ class ContextWordWindow:
             self.__wft_list = self.__wft_list[1:]
 
         # appending a new token.
-        self.__wft_list.append(WordFromTokens(token=token, pos=pos))
+        new_token = WordFromTokens(token=token, pos=pos)
+        print new_token.get_word()
+        self.__wft_list.append(new_token)
 
     def try_get_indices_if_matched(self, phrase, retrieve=True):
         assert(isinstance(phrase, unicode))
@@ -91,22 +93,17 @@ class ContextWordWindow:
         self.__wft_list = self.__wft_list[1:]
 
 
-#########################################
-# TEST
-#########################################
-
-
-
 def process_tokens(tokens, vocabs, handle):
     # NOTE: in vocabs everything should be ordered by decreasing length.
 
     for position, token in enumerate(tokens):
         cww.add_token(token=token, pos=position)
 
-    while (cww.list_len() > 0):
+    while cww.list_len() > 0:
         is_matched = False
         for index, vocab in enumerate(vocabs):
             for vocab_word in vocab:
+                print vocab_word.encode('utf-8')
                 positions = cww.try_get_indices_if_matched(phrase=vocab_word)
 
                 if positions is None:
@@ -123,13 +120,17 @@ def process_tokens(tokens, vocabs, handle):
             cww.del_last()
 
 
-match_list = [u"мама"]
+#########################################
+# TEST
+#########################################
+
+match_list = [u"мама", u'чтобы']
 tokens = [u"ма", u"##ма", u"не", u"за", u"что", u"##бы"]
 
 def handle(token_positions, vocab_word, vocab_index):
     print u"{pos} found by vw {vw} - [{vi}]".format(pos=token_positions, vw=vocab_word, vi=vocab_index)
 
 # Register completed words in vocabulary.
-cww = ContextWordWindow(5)
+cww = ContextWordWindow(120)
 process_tokens(tokens=tokens, vocabs=[match_list],
                handle=lambda pos, vw, vi: handle(pos, vw, vi))
