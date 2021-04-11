@@ -14,7 +14,8 @@ class WordFromTokens:
         return self.__positions
 
     def get_word(self):
-        return "".join([t[2:] if WordFromTokens.is_inner(t) else t for t in self.__tokens])
+        return "".join([t[2:] if WordFromTokens.is_inner(t) else t
+                        for t in self.__tokens])
 
     def append(self, token):
         assert(WordFromTokens.is_inner(token))
@@ -69,7 +70,8 @@ class ContextWordWindow:
 
         wft_to_match = self.__wft_list[:len(words)]
 
-        matched_result = [wft_to_match[ind].get_word() == words[ind] for ind in range(len(wft_to_match))]
+        matched_result = [wft_to_match[ind].get_word() == words[ind]
+                          for ind in range(len(wft_to_match))]
 
         for r in matched_result:
             if r is False:
@@ -89,29 +91,38 @@ class ContextWordWindow:
     def del_last(self):
         self.__wft_list = self.__wft_list[1:]
 
+    def compose_from_first(self, k):
 
-def process_tokens(tokens, vocabs, handle):
+        # pick the related part.
+        wft_part = self.__wft_list[:k]
+
+        # compose phrase.
+        phrase = " ".join([w.get_word() for w in wft_part])
+
+        # compose token positions list.
+        positions = []
+        for w in wft_part:
+            positions.extend(w.Pos)
+
+        return phrase, positions
+
+
+def process_tokens(tokens, vocabs, handle, k=6):
     assert(isinstance(vocabs, dict))
 
     cww = ContextWordWindow()
-
-    # NOTE: in vocabs everything should be ordered by decreasing length.
 
     for position, token in enumerate(tokens):
         cww.add_token(token=token, pos=position)
 
     while cww.list_len() > 0:
         is_matched = False
-        for vocab_name, vocab in vocabs.items():
-            for vocab_word in vocab:
-                positions = cww.try_get_indices_if_matched(phrase=vocab_word)
-
-                if positions is None:
-                    continue
-
-                handle(positions, vocab_word, vocab_name)
-                is_matched = True
-                break
+        for w_count in reversed(range(k)):
+            phrase, positions = cww.compose_from_first(w_count)
+            for vocab_name, vocab in vocabs.items():
+                if phrase in vocab:
+                    handle(positions, phrase, vocab_name)
+                    break
             if is_matched:
                 break
 
@@ -120,15 +131,10 @@ def process_tokens(tokens, vocabs, handle):
             cww.del_last()
 
 
-def order_vocab(vocab):
-    return list(reversed(sorted(vocab, key=lambda x: len(x.split(' ')))))
-
-
 def iter_from_file(filepath):
     with open(filepath, 'r') as f:
         for line in f.readlines():
-            l = line.strip()
-            yield l
+            yield line.strip()
 
 
 def read_lexicon(filepath):
@@ -137,5 +143,4 @@ def read_lexicon(filepath):
         w = line.split(u',')[0]
         l.append(w)
     return l
-
 
