@@ -38,6 +38,9 @@ class ContextWordWindow:
     def __clear_seq(self):
         self.__wft_list = []
 
+    def __iter__(self):
+        return iter(self.__wft_list)
+
     def list_len(self):
         return len(self.__wft_list)
 
@@ -107,7 +110,7 @@ class ContextWordWindow:
         return phrase, positions
 
 
-def process_tokens(tokens, vocabs, handle, k=6):
+def process_tokens(tokens, vocabs, handle=None, k=6):
     assert(isinstance(vocabs, dict))
 
     cww = ContextWordWindow()
@@ -115,13 +118,19 @@ def process_tokens(tokens, vocabs, handle, k=6):
     for position, token in enumerate(tokens):
         cww.add_token(token=token, pos=position)
 
+    entries_stat = {}
+    for vocab_name in vocabs.keys():
+        entries_stat[vocab_name] = 0
+
     while cww.list_len() > 0:
         is_matched = False
         for w_count in reversed(range(k)):
             phrase, positions = cww.compose_from_first(w_count)
             for vocab_name, vocab in vocabs.items():
-                if phrase in vocab:
-                    handle(positions, phrase, vocab_name)
+                if phrase.lower() in vocab:
+                    if handle is not None:
+                        handle(positions, phrase, vocab_name)
+                    entries_stat[vocab_name] += 1
                     break
             if is_matched:
                 break
@@ -129,6 +138,8 @@ def process_tokens(tokens, vocabs, handle, k=6):
         # Force remove the last token if nothing was matched.
         if not is_matched:
             cww.del_last()
+
+    return entries_stat
 
 
 def iter_from_file(filepath):

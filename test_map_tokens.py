@@ -8,7 +8,8 @@ def handle(token_positions, vocab_word, vocab_name):
 if __name__ == '__main__':
 
     tokens = ["ма", "##ма", "вы", "##го", "##ражи", "##вание",
-              "за", "что", "##бы", "все", '#', 's', '#']
+              "за", "что", "##бы", "быть", "спон", "##сором", "глу", "##пышка",
+              "все", '#', 's', '#']
 
     ordered_vocabs = {
         'sent': set(read_lexicon("data/rusentilex.csv")),
@@ -16,4 +17,7 @@ if __name__ == '__main__':
     }
 
     # Register completed words in vocabulary.
-    process_tokens(tokens=tokens, vocabs=ordered_vocabs, handle=handle)
+    entries_stat = process_tokens(tokens=tokens, vocabs=ordered_vocabs, handle=handle)
+
+    # Stat
+    print(entries_stat)
