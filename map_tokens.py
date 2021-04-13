@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from mystem_wrapper import MystemWrapper
 
 
 class WordFromTokens:
@@ -110,7 +111,8 @@ class ContextWordWindow:
         return phrase, positions
 
 
-def process_tokens(tokens, vocabs, handle=None, k=6, mystem=None):
+def process_tokens(tokens, vocabs, stemmer, handle=None, k=6):
+    assert(isinstance(stemmer, MystemWrapper))
     assert(isinstance(vocabs, dict))
 
     cww = ContextWordWindow()
@@ -128,8 +130,7 @@ def process_tokens(tokens, vocabs, handle=None, k=6, mystem=None):
             phrase, positions = cww.compose_from_last(w_count)
 
             # applying lemmatization
-            if mystem is not None:
-                phrase = mystem.lemmatize_to_str(phrase)
+            phrase = stemmer.lemmatize_to_str(phrase)
 
             for vocab_name, vocab in vocabs.items():
 
@@ -162,7 +163,8 @@ def iter_from_file(filepath, stemmer):
 
     with open(filepath, 'r') as f:
         for line in f.readlines():
-            lemma_line = stemmer.lemmatize_to_str(line.strip())
+            s_line = line.strip()
+            lemma_line = s_line if stemmer is None else stemmer.lemmatize_to_str(s_line)
 
             if not lemma_line in s:
                 yield lemma_line
@@ -170,9 +172,9 @@ def iter_from_file(filepath, stemmer):
             s.add(lemma_line)
 
 
-def read_lexicon(filepath, stemmer):
+def read_lexicon(filepath):
     l = []
-    for line in iter_from_file(filepath, stemmer):
+    for line in iter_from_file(filepath, None):
         w = line.split(u',')[0]
         l.append(w)
     return l
