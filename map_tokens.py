@@ -91,10 +91,10 @@ class ContextWordWindow:
 
         return token_inds
 
-    def del_last(self):
-        self.__wft_list = self.__wft_list[1:]
+    def del_last(self, count):
+        self.__wft_list = self.__wft_list[count:]
 
-    def compose_from_first(self, k):
+    def compose_from_last(self, k):
 
         # pick the related part.
         wft_part = self.__wft_list[:k]
@@ -110,7 +110,7 @@ class ContextWordWindow:
         return phrase, positions
 
 
-def process_tokens(tokens, vocabs, handle=None, k=6):
+def process_tokens(tokens, vocabs, handle=None, k=6, mystem=None):
     assert(isinstance(vocabs, dict))
 
     cww = ContextWordWindow()
@@ -125,32 +125,54 @@ def process_tokens(tokens, vocabs, handle=None, k=6):
     while cww.list_len() > 0:
         is_matched = False
         for w_count in reversed(range(k)):
-            phrase, positions = cww.compose_from_first(w_count)
+            phrase, positions = cww.compose_from_last(w_count)
+
+            # applying lemmatization
+            if mystem is not None:
+                phrase = mystem.lemmatize_to_str(phrase)
+
             for vocab_name, vocab in vocabs.items():
-                if phrase.lower() in vocab:
-                    if handle is not None:
-                        handle(positions, phrase, vocab_name)
-                    entries_stat[vocab_name] += 1
-                    break
+
+                if phrase not in vocab:
+                    continue
+
+                # ok, phrase was matched.
+                if handle is not None:
+                    handle(positions, phrase, vocab_name)
+                entries_stat[vocab_name] += 1
+                is_matched = True
+                cww.del_last(w_count)
+                break
+
             if is_matched:
                 break
 
         # Force remove the last token if nothing was matched.
         if not is_matched:
-            cww.del_last()
+            cww.del_last(1)
 
     return entries_stat
 
 
-def iter_from_file(filepath):
+def iter_from_file(filepath, stemmer):
+    """ Iter only unique lemmatized lines from source, declared by filepath.
+    """
+
+    s = set()
+
     with open(filepath, 'r') as f:
         for line in f.readlines():
-            yield line.strip()
+            lemma_line = stemmer.lemmatize_to_str(line.strip())
+
+            if not lemma_line in s:
+                yield lemma_line
+
+            s.add(lemma_line)
 
 
-def read_lexicon(filepath):
+def read_lexicon(filepath, stemmer):
     l = []
-    for line in iter_from_file(filepath):
+    for line in iter_from_file(filepath, stemmer):
         w = line.split(u',')[0]
         l.append(w)
     return l
